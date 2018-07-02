@@ -47,7 +47,7 @@ export function connect() {
     });
 }
 
-export function startJob(records, lowTag, deleteUnusedRecords, replicateRecords, sessionToken, userinfo) {
+export function startJob(records, lowTag, deleteUnusedRecords, replicateRecords, sessionToken, userinfo, hostInfo = [], handleComponents = true) {
   if (channel === undefined) {
     throw new Error('Queue for sending tasks is not available.');
   }
@@ -67,7 +67,7 @@ export function startJob(records, lowTag, deleteUnusedRecords, replicateRecords,
   channel.assertQueue(JOB_QUEUE, {durable: true});
 
   const jobId = uuid.v4();
-  const tasks = records.map(_.partial(createTask, jobId, sessionToken, lowTag, deleteUnusedRecords, bypassSIDdeletion));
+  const tasks = records.map(_.partial(createTask, jobId, sessionToken, lowTag, deleteUnusedRecords, bypassSIDdeletion, hostInfo, handleComponents));
 
   const jobPayload = new Buffer(JSON.stringify(createJob(jobId, tasks, userinfo)));
   // Node 6 has Buffer.from(msg) which should be used
@@ -79,9 +79,11 @@ export function startJob(records, lowTag, deleteUnusedRecords, replicateRecords,
     channel.sendToQueue(TASK_QUEUE, new Buffer(JSON.stringify(task)), {persistent: true});
   });
 
+  return Promise.resolve(jobId);
 }
 
-function createTask(jobId, sessionToken, lowTag, deleteUnusedRecords, bypassSIDdeletion, recordIdHints) {
+
+function createTask(jobId, sessionToken, lowTag, deleteUnusedRecords, bypassSIDdeletion, hostInfo, handleComponents, recordIdHints) {
   return {
     jobId,
     taskId: uuid.v4(),
@@ -89,7 +91,9 @@ function createTask(jobId, sessionToken, lowTag, deleteUnusedRecords, bypassSIDd
     lowTag,
     sessionToken,
     deleteUnusedRecords,
-    bypassSIDdeletion
+    bypassSIDdeletion,
+    hostInfo,
+    handleComponents
   };
 }
 

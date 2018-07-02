@@ -115,3 +115,60 @@ export const FAKE_RECORD_WITH_LOW_TEST_REMOVED = MarcRecord.fromString([
   'SID    ‡btest‡cFCC131',
   'SID    ‡btest-2‡c114'
 ].join('\n'));
+
+export const FAKE_RECORD_WITH_ARTO = MarcRecord.fromString([
+  'LDR    abcdefghijk',
+  '001    28474',
+  '003    aaabbb',
+  '100    ‡aTest Author',
+  '245 0  ‡aSome content',
+  '245 0  ‡aTest Title‡bTest field‡cTest content',
+  '300    ‡aSub-A‡5TEST',
+  '960    ‡aARTO'
+].join('\n'));
+
+export const FAKE_RECORD_COMPONENT_BOTH = MarcRecord.fromString([
+  'LDR    abcdefgaijk',
+  '001    28474',
+  '003    aaabbb',
+  '100    ‡aTest Author',
+  '245 0  ‡aSome content',
+  '245 0  ‡aTest Title‡bTest field‡cTest content',
+  '300    ‡aSub-A‡5TEST',
+  '773    ‡w(FI-MELINDA)123456'
+].join('\n'));
+
+export const FAKE_RECORD_COMPONENT_LDR = MarcRecord.fromString([
+  'LDR    abcdefgaijk',
+  '001    28474',
+  '003    aaabbb',
+  '100    ‡aTest Author',
+  '245 0  ‡aSome content',
+  '245 0  ‡aTest Title‡bTest field‡cTest content',
+  '300    ‡aSub-A‡5TEST'
+].join('\n'));
+
+export const FAKE_RECORD_COMPONENT_LINK = MarcRecord.fromString([
+  'LDR    abcdefgxijk',
+  '001    28474',
+  '003    aaabbb',
+  '100    ‡aTest Author',
+  '245 0  ‡aSome content',
+  '245 0  ‡aTest Title‡bTest field‡cTest content',
+  '300    ‡aSub-A‡5TEST',
+  '773    ‡w(FI-MELINDA)123456'
+].join('\n'));
+
+export const FAKE_RECORD_TWO_COMPONENT_LINKS = MarcRecord.fromString([
+  'LDR    abcdefgxijk',
+  '001    28474',
+  '003    aaabbb',
+  '100    ‡aTest Author',
+  '245 0  ‡aSome content',
+  '245 0  ‡aTest Title‡bTest field‡cTest content',
+  '300    ‡aSub-A‡5TEST',
+  '773    ‡w(FI-MELINDA)123456',
+  '773    ‡w(FI-MELINDA)456123'
+].join('\n'));
+
+

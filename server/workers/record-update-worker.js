@@ -30,10 +30,11 @@ import { recordIsUnused, markRecordAsDeleted, isComponentRecord } from 'server/r
 import { logger } from 'server/logger';
 import MelindaClient from '@natlibfi/melinda-api-client';
 import { readSessionToken } from 'server/session-crypt';
-import { resolveMelindaId } from '../record-id-resolution-service';
+import { resolveMelindaId, findComponentIds } from '../record-id-resolution-service';
 import _ from 'lodash';
 import { transformRecord } from 'server/record-transform-service';
 import { checkAlephHealth } from '../aleph-health-check-service';
+import { startJob } from '../record-list-service';
 
 const apiUrl = readEnvironmentVariable('MELINDA_API', null);
 const minTaskIntervalSeconds = readEnvironmentVariable('MIN_TASK_INTERVAL_SECONDS', 10);
@@ -177,22 +178,73 @@ export function processTask(task, client) {
 
     return client.loadRecord(taskWithResolvedId.recordId, MELINDA_API_NO_REROUTE_OPTS).then(loadedRecord => {
 
-      if (isComponentRecord(loadedRecord)) {
-        throw new RecordProcessingError('Record is a component record. Record not updated.', taskWithResolvedId);
+      if (isComponentRecord(loadedRecord) || hasHostLink(loadedRecord)) {
+        //return checkComponentValidity(loadedRecord).then(processComponents).then(continueWithHost);
+        taskWithResolvedId.report.push('Osakohde.');
+       
+        //taskWithResolvedId.hostInfo.push('Host');
+        const hostLinks = getHostLinks(loadedRecord);
+        taskWithResolvedId.hosts = hostLinks;
+        
+        //taskWithResolvedId.hosts.push(hostLinks);
+        // check here if task includes hostData ie. should LOW-tag not be removed from record (in case of several hosts)
+        if (hostLinks.length > 1) {
+          throw new RecordProcessingError('Record is a component record with several host links. Record not updated.', taskWithResolvedId);
+        }
+      }
+      
+      if (taskWithResolvedId.componentList && taskWithResolvedId.componentList.length > 0) {
+        return processComponents().then(continueWithHost);
+      }
+      else {
+        return continueWithHost();
+      }
+      
+
+      function processComponents() {
+        logger.log('info', 'record-update-worker: Adding components to queue', taskWithResolvedId.recordId);
+       
+        const hostInfo = [taskWithResolvedId.recordId];
+        const componentRecordHints = [];
+
+        taskWithResolvedId.componentList.forEach(component => {
+          componentRecordHints.push({melindaId: component});
+        });
+
+
+        let componentUserinfo = {}; 
+        if (taskWithResolvedId.sessionToken) {
+          componentUserinfo = readSessionToken(taskWithResolvedId.sessionToken);
+        }
+       
+        const componentReplicateRecords = (taskWithResolvedId.bypassSIDdeletion);
+
+        return startJob(componentRecordHints, taskWithResolvedId.lowTag, taskWithResolvedId.deleteUnusedRecords, componentReplicateRecords, taskWithResolvedId.sessionToken, componentUserinfo, hostInfo)
+          .then( jobId => {
+            const componentListReport='Created new job '+jobId+' for '+componentRecordHints.length+' component records.';
+            taskWithResolvedId.report.push(componentListReport); 
+            logger.log('info', 'record-update-worker: Created new job '+jobId+'for component records.', taskWithResolvedId.recordId);
+            return Promise.resolve(taskWithResolvedId);
+          });
       }
 
-      logger.log('info', 'record-update-worker: Transforming record', taskWithResolvedId.recordId);
-      return transformRecord('REMOVE-LOCAL-REFERENCE', loadedRecord, transformOptions)
-        .then(result => {
-          return _.set(result, 'originalRecord', loadedRecord);
-        });
+      function continueWithHost() {
+        logger.log('info', 'record-update-worker: Transforming record', taskWithResolvedId.recordId);
+        return transformRecord('REMOVE-LOCAL-REFERENCE', loadedRecord, transformOptions)
+            .then(result => {
+              return _.set(result, 'originalRecord', loadedRecord);
+            });
+      }
+
 
     }).then(result => {
       const {record, report, originalRecord} = result;
-      taskWithResolvedId.report = report;
+      taskWithResolvedId.report.push(...report); 
 
       if (recordsEqual(record, originalRecord)) {
-        throw new RecordProcessingError('Tietueessa ei tapahtunut muutoksia. Tietuetta ei päivitetty.', taskWithResolvedId);
+        if (!(taskWithResolvedId.deleteUnusedRecords)) {
+          throw new RecordProcessingError('Tietueessa ei tapahtunut muutoksia. Tietuetta ei päivitetty.', taskWithResolvedId);
+        }
       }
 
       logger.log('info', 'record-update-worker: Updating record', taskWithResolvedId.recordId);
@@ -203,7 +255,7 @@ export function processTask(task, client) {
         logger.log('info', 'record-update-worker: deleteUnusedRecords is true');
         logger.log('info', 'record-update-worker: Loading record', taskWithResolvedId.recordId);
         return client.loadRecord(response.recordId, MELINDA_API_NO_REROUTE_OPTS).then(loadedRecord => {
-          if (recordIsUnused(loadedRecord)) {
+          if (recordIsUnused(loadedRecord) && recordHasNoArtoTag(loadedRecord) ) {
             logger.log('info', 'record-update-worker: Deleting unused record', taskWithResolvedId.recordId);
             markRecordAsDeleted(loadedRecord);
             return client.updateRecord(loadedRecord)
@@ -260,6 +312,16 @@ function findMelindaId(task) {
   return resolveMelindaId(recordIdHints.melindaId, recordIdHints.localId, task.lowTag, melindaIdLinks)
     .then(recordId => {
       return _.assign({}, task, {recordId});
+    }).then(task => {
+      if (task.handleComponents) {
+        return findComponentIds(task.recordId)
+          .then(componentList => {
+            return _.assign({}, task, {componentList: componentList}, {report: []});
+          });
+      }
+      else {
+        return _.assign({}, task, {report: ['Components not handled']});
+      }
     });
 }
 
@@ -267,6 +329,28 @@ function readTask(msg) {
   return JSON.parse(msg.content.toString());
 }
 
+function recordHasNoArtoTag(record){
+  return !(record.containsFieldWithValue('960', 'a', 'ARTO'));
+}
+
+function hasHostLink(record) {
+  return (record.fields && record.fields.filter(field => ['773'].some(tag => tag === field.tag)).length > 0);
+}
+
+function getHostLinks(record) {
+  //return ['1234','1424'];
+  const hostLinkSubfields = record.getFields('773').map(field => getSubfields(field,'w')
+                                                   .map(subfield => subfield.value)
+                                                   .filter(value => value.match(/^\(FI-MELINDA\)/)));
+
+  return _.uniq(hostLinkSubfields.map(subfield => subfield[0].replace('(FI-MELINDA)','')));
+  
+}
+
+function getSubfields(field, code) {
+  return field.subfields.filter(sub => sub.code === code);
+}
+ 
 export function RecordProcessingError(message, task) {
   const temp = Error.call(this, message);
   temp.name = this.name = 'RecordProcessingError';

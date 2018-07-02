@@ -23,7 +23,7 @@ const plugins = [
   }),
   new webpack.optimize.OccurrenceOrderPlugin()
 ];
-console.log(PATHS.commons_frontend);
+//console.log(PATHS.commons_frontend);
 module.exports = {
   entry: {
     app: path.resolve(PATHS.app, 'main.js'),

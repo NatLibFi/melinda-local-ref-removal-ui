@@ -50,7 +50,7 @@ describe('RecordIdInputArea', () => {
   describe('when editor is set to readOnly', () => {
     
     beforeEach(() => {
-      component.componentWillReceiveProps({readOnly: true});
+      component.UNSAFE_componentWillReceiveProps({readOnly: true});
     });
     
     it('sets the editor into readOnly mode', () => {
@@ -62,7 +62,7 @@ describe('RecordIdInputArea', () => {
    
     describe('when editor is enabled afterwards', () => {
       beforeEach(() => {
-        component.componentWillReceiveProps({readOnly: false});
+        component.UNSAFE_componentWillReceiveProps({readOnly: false});
       });
       it('sets the editor into editable mode', () => {
         expect(editor.getOption('readOnly')).to.equal(false);

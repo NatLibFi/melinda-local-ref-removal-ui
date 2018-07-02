@@ -38,6 +38,7 @@ const AMQP_USERNAME = readEnvironmentVariable('AMQP_USERNAME', 'guest', { hideDe
 const AMQP_PASSWORD = readEnvironmentVariable('AMQP_PASSWORD', 'guest', { hideDefaultValue: true });
 const INCOMING_TASK_RESULT_QUEUE = 'task_result_queue';
 const INCOMING_JOB_QUEUE = 'job_queue';
+const FALLBACK_EMAIL = readEnvironmentVariable('FALLBACK_EMAIL', 'melinda-posti@helsinki.fi');
 
 export default class ResultWorker {
   constructor() {
@@ -175,6 +176,10 @@ function dispatchEmail(jobId, emailAddress, taskResults) {
   logger.log('info', `Sending results of job ${jobId} to ${emailAddress}`);
 
   const htmlEmailContent = ReactDOMServer.renderToStaticMarkup(<ReportEmail taskResults={taskResults} jobId={jobId} />);
+
+  if (emailAddress == null ) {
+    emailAddress = FALLBACK_EMAIL;
+  }
 
   mail({
     to: emailAddress,

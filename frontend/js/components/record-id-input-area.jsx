@@ -66,7 +66,11 @@ export class RecordIdInputArea extends React.Component {
 
   }
 
-  componentWillReceiveProps(nextProps) {
+  shouldComponentUpdate() {
+    return false;
+  }
+
+  UNSAFE_componentWillReceiveProps(nextProps) {
     const readOnly = _.get(nextProps, 'readOnly', false);
     const { recordParseErrors, submitStatus } = nextProps;
 
@@ -79,10 +83,6 @@ export class RecordIdInputArea extends React.Component {
       this.clearEditor();
     }
     this.setState({ readOnly, submitStatus });
-  }
-
-  shouldComponentUpdate() {
-    return false;
   }
 
   handleUpdate() {
