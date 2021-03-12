@@ -24,16 +24,18 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import express from 'express';
+*/
+
+import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { logger } from 'server/logger';
-import { corsOptions, requireBodyParams, userinfoMiddleware } from 'server/utils';
-import HttpStatus from 'http-status-codes';
-import { connect, startJob } from './record-list-service';
-import { requireSession, readSessionMiddleware } from 'server/session-controller';
+import {logger} from 'server/logger';
+import {corsOptions, requireBodyParams, userinfoMiddleware} from 'server/utils';
+import HttpStatus from 'http-status';
+import {connect, startJob} from './record-list-service';
+import {requireSession, readSessionMiddleware} from 'server/session-controller';
 import cookieParser from 'cookie-parser';
-import { validate } from 'shared/input-parser';
+import {validate} from 'shared/input-parser';
 
 // Connect to AMQP host
 connect();
@@ -45,8 +47,8 @@ recordListController.use(cookieParser());
 recordListController.options('/', cors(corsOptions)); // enable pre-flight
 
 recordListController.post('/', cors(corsOptions), readSessionMiddleware, requireSession, requireBodyParams('records', 'lowTag'), userinfoMiddleware, (req, res) => {
-  const { records, lowTag } = req.body;
-  const { sessionToken } = req.cookies;
+  const {records, lowTag} = req.body;
+  const {sessionToken} = req.cookies;
 
   const deleteUnusedRecords = req.body.deleteUnusedRecords || false;
   const replicateRecords = req.body.replicateRecords || false;
@@ -57,7 +59,7 @@ recordListController.post('/', cors(corsOptions), readSessionMiddleware, require
     }
     startJob(records, lowTag, deleteUnusedRecords, replicateRecords, sessionToken, req.userinfo);
 
-  } catch(error) {
+  } catch (error) {
     logger.log('error', 'Unable to start job', error);
     return res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR);
   }

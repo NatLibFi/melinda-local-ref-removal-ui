@@ -24,31 +24,33 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import amqp from 'amqplib';
-import { readEnvironmentVariable, createTimer, exceptCoreErrors } from 'server/utils';
-import { recordIsUnused, markRecordAsDeleted, isComponentRecord } from 'server/record-utils';
-import { logger } from 'server/logger';
-import MelindaClient from '@natlibfi/melinda-api-client';
-import { readSessionToken } from 'server/session-crypt';
-import { resolveMelindaId } from '../record-id-resolution-service';
-import _ from 'lodash';
-import { transformRecord } from 'server/record-transform-service';
-import { checkAlephHealth } from '../aleph-health-check-service';
+*/
 
-const apiUrl = readEnvironmentVariable('MELINDA_API', null);
+import amqp from 'amqplib';
+import {readEnvironmentVariable, createTimer, exceptCoreErrors} from 'server/utils';
+import {recordIsUnused, markRecordAsDeleted, isComponentRecord} from 'server/record-utils';
+import {logger} from 'server/logger';
+import {createApiClient} from '@natlibfi/melinda-rest-api-client';
+import {readSessionToken} from 'server/session-crypt';
+import {resolveMelindaId} from '../record-id-resolution-service';
+import _ from 'lodash';
+import {transformRecord} from 'server/record-transform-service';
+import {checkAlephHealth} from '../aleph-health-check-service';
+
+const restApiUrl = readEnvironmentVariable('REST_API_URL', null);
 const minTaskIntervalSeconds = readEnvironmentVariable('MIN_TASK_INTERVAL_SECONDS', 10);
 const SLOW_PROCESSING_WAIT_TIME_MS = 10000;
 const ALEPH_UNAVAILABLE_WAIT_TIME = 10000;
 
 const defaultConfig = {
-  endpoint: apiUrl,
-  user: '',
-  password: ''
+  restApiUrl,
+  restApiUsername: '',
+  restApiPassword: '',
 };
 
 const AMQP_HOST = readEnvironmentVariable('AMQP_HOST');
-const AMQP_USERNAME = readEnvironmentVariable('AMQP_USERNAME', 'guest', { hideDefaultValue: true });
-const AMQP_PASSWORD = readEnvironmentVariable('AMQP_PASSWORD', 'guest', { hideDefaultValue: true });
+const AMQP_USERNAME = readEnvironmentVariable('AMQP_USERNAME', 'guest', {hideDefaultValue: true});
+const AMQP_PASSWORD = readEnvironmentVariable('AMQP_PASSWORD', 'guest', {hideDefaultValue: true});
 const INCOMING_TASK_QUEUE = 'task_queue';
 const OUTGOING_TASK_QUEUE = 'task_result_queue';
 
@@ -70,11 +72,10 @@ export function connect() {
 function startTaskExecutor(channel) {
 
   let waitTimeMs = 0;
-  channel.consume(INCOMING_TASK_QUEUE, function(msg) {
-
+  channel.consume(INCOMING_TASK_QUEUE, function (msg) {
     logger.log('info', 'record-update-worker: Received task', msg.content.toString());
-
     logger.log('info', `record-update-worker: Waiting ${waitTimeMs}ms before starting the task.`);
+
     setTimeout(() => {
       const taskProcessingTimer = createTimer();
 
@@ -82,28 +83,26 @@ function startTaskExecutor(channel) {
         const task = readTask(msg);
         const {username, password} = readSessionToken(task.sessionToken);
 
-        const client = new MelindaClient({
+        const client = createApiClient({
           ...defaultConfig,
-          user: username,
-          password: password
+          restApiUsername: username,
+          restApiPassword: password
         });
 
         assertAlephHealth()
           .then(() => processTask(task, client))
           .then(taskResponse => {
-            channel.sendToQueue(OUTGOING_TASK_QUEUE, new Buffer(JSON.stringify(taskResponse)), {persistent: true});
+            channel.sendToQueue(OUTGOING_TASK_QUEUE, Buffer.from(JSON.stringify(taskResponse)), {persistent: true});
           }).catch(error => {
-
             if (error instanceof RecordProcessingError) {
-              logger.log('info', 'record-update-worker: Processing failed:', error.message);
+              logger.log('info', `record-update-worker: Processing failed: ${JSON.stringify(error)}`);
               const failedTask = markTaskAsFailed(error.task, error.message);
-              channel.sendToQueue(OUTGOING_TASK_QUEUE, new Buffer(JSON.stringify(failedTask)), {persistent: true});
+              channel.sendToQueue(OUTGOING_TASK_QUEUE, Buffer.from(JSON.stringify(failedTask)), {persistent: true});
             } else {
-              logger.log('error', 'record-update-worker: Processing failed:', error);
+              logger.log('error', `record-update-worker: Processing failed: ${error}`);
               const failedTask = markTaskAsFailed(task, error.message);
-              channel.sendToQueue(OUTGOING_TASK_QUEUE, new Buffer(JSON.stringify(failedTask)), {persistent: true});
+              channel.sendToQueue(OUTGOING_TASK_QUEUE, Buffer.from(JSON.stringify(failedTask)), {persistent: true});
             }
-
           }).then(() => {
             const taskProcessingTimeMs = taskProcessingTimer.elapsed();
 
@@ -122,7 +121,7 @@ function startTaskExecutor(channel) {
             logger.log('error', error);
           });
 
-      } catch(error) {
+      } catch (error) {
         //logger.log('error', 'Dropped invalid task', error);
         const {consumerTag, deliveryTag} = msg;
         logger.log('error', 'record-update-worker: Dropped invalid task', {consumerTag, deliveryTag}, error.message);
@@ -159,8 +158,6 @@ function markTaskAsFailed(task, failedMessage) {
 }
 
 export function processTask(task, client) {
-  const MELINDA_API_NO_REROUTE_OPTS = {handle_deleted: 1};
-
   const skipLocalSidCheckForRemoval = task.recordIdHints.melindaId !== undefined && task.recordIdHints.localId === undefined;
 
   const transformOptions = {
@@ -175,7 +172,8 @@ export function processTask(task, client) {
   return findMelindaId(task).then(taskWithResolvedId => {
     logger.log('info', 'record-update-worker: Loading record', taskWithResolvedId.recordId);
 
-    return client.loadRecord(taskWithResolvedId.recordId, MELINDA_API_NO_REROUTE_OPTS).then(loadedRecord => {
+    return client.read(taskWithResolvedId.recordId).then(loadResult => {
+      const loadedRecord = loadResult.record;
 
       if (isComponentRecord(loadedRecord)) {
         throw new RecordProcessingError('Record is a component record. Record not updated.', taskWithResolvedId);
@@ -196,17 +194,19 @@ export function processTask(task, client) {
       }
 
       logger.log('info', 'record-update-worker: Updating record', taskWithResolvedId.recordId);
-      return client.updateRecord(record).catch(convertMelindaApiClientErrorToError);
+      const recordId = getRecordId(record);
+      return client.update(record, recordId).catch(convertMelindaApiClientErrorToError);
     }).then(response => {
-
       if (task.deleteUnusedRecords) {
         logger.log('info', 'record-update-worker: deleteUnusedRecords is true');
         logger.log('info', 'record-update-worker: Loading record', taskWithResolvedId.recordId);
-        return client.loadRecord(response.recordId, MELINDA_API_NO_REROUTE_OPTS).then(loadedRecord => {
+        return client.read(taskWithResolvedId.recordId).then(loadResult => {
+          const loadedRecord = loadResult.record;
           if (recordIsUnused(loadedRecord)) {
             logger.log('info', 'record-update-worker: Deleting unused record', taskWithResolvedId.recordId);
             markRecordAsDeleted(loadedRecord);
-            return client.updateRecord(loadedRecord)
+            const loadedRecordId = getRecordId(loadedRecord);
+            return client.update(loadedRecord, loadedRecordId)
               .then(response => {
                 taskWithResolvedId.report.push('Koko tietue poistettu.');
                 return response;
@@ -251,7 +251,7 @@ function convertMelindaApiClientErrorToError(melindaApiClientError) {
 
 function findMelindaId(task) {
 
-  const { recordIdHints } = task;
+  const {recordIdHints} = task;
 
   const melindaIdLinks = _.get(recordIdHints, 'links', [])
     .map(link => link.toUpperCase())
@@ -261,6 +261,11 @@ function findMelindaId(task) {
     .then(recordId => {
       return _.assign({}, task, {recordId});
     });
+}
+
+function getRecordId(record) {
+  const [f001] = record.get(/^001$/u);
+  return f001.value;
 }
 
 function readTask(msg) {

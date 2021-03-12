@@ -24,13 +24,15 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import {expect} from 'chai';
-import { connect, startJob } from './record-list-service';
-import { __RewireAPI__ as AuthProviderRewireAPI } from './record-list-service';
+*/
+
+import {expect} from 'chai';
+import {connect, startJob} from './record-list-service';
+import {__RewireAPI__ as AuthProviderRewireAPI} from './record-list-service';
 import sinon from 'sinon';
 
 describe('Record list service', () => {
-  const TEST_RECORD_LIST = [1,2,3];
+  const TEST_RECORD_LIST = [1, 2, 3];
   let connectionStub;
   let channelStub;
 
@@ -43,7 +45,7 @@ describe('Record list service', () => {
     connectionStub = {
       createChannel: sinon.stub().resolves(channelStub)
     };
-    AuthProviderRewireAPI.__Rewire__('amqp', {connect: sinon.stub().resolves(connectionStub) });
+    AuthProviderRewireAPI.__Rewire__('amqp', {connect: sinon.stub().resolves(connectionStub)});
   });
   afterEach(() => {
     AuthProviderRewireAPI.__ResetDependency__('amqp');

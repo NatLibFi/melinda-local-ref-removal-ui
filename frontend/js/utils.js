@@ -24,7 +24,9 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import { FetchNotOkError } from './errors';
+*/
+
+import { FetchNotOkError } from './errors';
 
 export function exceptCoreErrors(fn) {
 

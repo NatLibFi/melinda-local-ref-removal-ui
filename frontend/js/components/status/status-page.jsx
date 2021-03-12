@@ -27,13 +27,13 @@
 */
 import React from 'react';
 
-const statusPath = __DEV__ ? 'http://localhost:3001/status': '/status';
+const statusPath = __DEV__ ? 'http://localhost:3001/status' : '/status';
 
 export class StatusPage extends React.Component {
 
   static propTypes = {
 
-  }
+  };
   constructor() {
     super();
 
@@ -54,7 +54,7 @@ export class StatusPage extends React.Component {
       if (response.status !== 200) {
         throw new Error(response.statusText);
       }
-      
+
       response.json().then(body => {
         this.setState({
           jobs: Object.values(body),
@@ -70,7 +70,7 @@ export class StatusPage extends React.Component {
   }
 
   renderSingleJob(job) {
-   
+
     const {jobId, allTasksCount, incompleteTaskCount} = job;
     const doneTasks = allTasksCount - incompleteTaskCount;
     return (<tr><td>{jobId}</td><td>{doneTasks}/{allTasksCount}</td></tr>);
@@ -80,12 +80,12 @@ export class StatusPage extends React.Component {
 
     return (
       <table>
-      <thead>
-        <tr><th>JobId</th><th>status</th></tr>
-      </thead>
-      <tbody>
-        {this.state.jobs.map(this.renderSingleJob)}
-      </tbody>
+        <thead>
+          <tr><th>JobId</th><th>status</th></tr>
+        </thead>
+        <tbody>
+          {this.state.jobs.map(this.renderSingleJob)}
+        </tbody>
       </table>
     );
   }
@@ -104,8 +104,8 @@ export class StatusPage extends React.Component {
   render() {
     return (
       <div>
-        { this.renderJobTable() }
-        { this.state.error ? this.renderError() : null }
+        { this.renderJobTable()}
+        { this.state.error ? this.renderError() : null}
       </div>
     );
   }

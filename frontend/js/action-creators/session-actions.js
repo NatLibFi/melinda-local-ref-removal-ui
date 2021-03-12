@@ -27,7 +27,7 @@
 */import * as Cookies from 'js-cookie';
 import { exceptCoreErrors, errorIfStatusNot } from '../utils';
 import { FetchNotOkError } from '../errors';
-import HttpStatus from 'http-status-codes';
+import HttpStatus from 'http-status';
 import {CREATE_SESSION_START, CREATE_SESSION_ERROR, CREATE_SESSION_SUCCESS, VALIDATE_SESSION_START} from '../constants/action-type-constants';
 import { resetState } from './ui-actions';
 

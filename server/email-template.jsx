@@ -25,6 +25,7 @@
 * for the JavaScript code in this file.
 *
 */
+
 import React from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
@@ -34,15 +35,15 @@ export class ReportEmail extends React.Component {
   static propTypes = {
     taskResults: PropTypes.array.isRequired,
     jobId: PropTypes.string.isRequired
-  }
+  };
 
   renderRow(taskResult, key) {
 
     const {lowTag} = taskResult;
     const recordId = _.get(taskResult, 'recordId', 'ID-NOT-FOUND');
-    const localId = _.get(taskResult.recordIdHints, 'localId' ,'');
+    const localId = _.get(taskResult.recordIdHints, 'localId', '');
 
-    const meta = { lowTag, recordId, localId };
+    const meta = {lowTag, recordId, localId};
 
     if (taskResult.taskFailed) {
       return this.renderFailedTask(taskResult, meta, key);
@@ -52,7 +53,7 @@ export class ReportEmail extends React.Component {
   }
 
   renderFailedTask(taskResult, meta, key) {
-    const { lowTag, recordId, localId } = meta;
+    const {lowTag, recordId, localId} = meta;
     const status = 'VIRHE';
 
     return (
@@ -67,12 +68,11 @@ export class ReportEmail extends React.Component {
   }
 
   renderCompletedTask(taskResult, meta, key) {
-    const { lowTag, recordId, localId } = meta;
+    const {lowTag, recordId, localId} = meta;
 
     const report = _.get(taskResult, 'report', []).join(', ');
-    const {code, message} = _.head(taskResult.updateResponse.messages);
-
-    const status = code === 20 ? 'OK' : code;
+    const {status} = taskResult.updateResponse;
+    const message = status === 'UPDATED' || status === '200' ? 'OK' : '';
     return (
       <tr key={key}>
         <td>{recordId}</td>
@@ -96,25 +96,25 @@ export class ReportEmail extends React.Component {
 
     return (
       <div>
-      <p>Melindan poistot-käyttöliittymästä lähettämäsi tietuelistaus on käsitelty. Alta näet tulokset tietuekohtaisesti.</p>
-      <p>Tähän viestiin ei voi vastata. Tarvittaessa ota yhteyttä Melinda-tukeen (melinda-posti@helsinki.fi) 
+        <p>Melindan poistot-käyttöliittymästä lähettämäsi tietuelistaus on käsitelty. Alta näet tulokset tietuekohtaisesti.</p>
+        <p>Tähän viestiin ei voi vastata. Tarvittaessa ota yhteyttä Melinda-tukeen (melinda-posti@helsinki.fi)
       ja liitä viestiisi poistoajon id: job {this.props.jobId}</p>
-      
-      <table cellSpacing="0" cellPadding="0">
-        <thead>
-          <tr style={{textAlign: 'left'}}>
-            <th style={columnStyle}>Melinda-ID</th>
-            <th style={columnStyle}>paikalliskannan ID</th>
-            <th style={columnStyle}>tietokantatunnus</th>
-            <th style={columnStyle}>tila</th>
-            <th style={columnStyle}>viesti</th>
-            <th style={columnStyle}>raportti</th>
-          </tr>
-        </thead>
-        <tbody>
-        {rows.map(renderRow)}
-        </tbody>
-      </table>
+
+        <table cellSpacing="0" cellPadding="0">
+          <thead>
+            <tr style={{textAlign: 'left'}}>
+              <th style={columnStyle}>Melinda-ID</th>
+              <th style={columnStyle}>paikalliskannan ID</th>
+              <th style={columnStyle}>tietokantatunnus</th>
+              <th style={columnStyle}>tila</th>
+              <th style={columnStyle}>viesti</th>
+              <th style={columnStyle}>raportti</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(renderRow)}
+          </tbody>
+        </table>
       </div>
     );
   }

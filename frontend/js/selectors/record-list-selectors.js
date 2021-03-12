@@ -25,7 +25,7 @@
 * for the JavaScript code in this file.
 *
 */import _ from 'lodash';
-import { createSelector } from 'reselect';
+import {createSelector} from 'reselect';
 
 const recordList = state => state.getIn(['recordListForm', 'rawRecordIdRows']);
 
@@ -34,7 +34,7 @@ export const validRecordList = createSelector([recordList], (recordList) => {
 });
 
 export const validRecordCount = createSelector(
-  [validRecordList], 
+  [validRecordList],
   (validRecordList) => {
     return validRecordList.length;
   }
@@ -61,17 +61,17 @@ export const submitEnabled = createSelector(
   (validRecordCount, recordParseErrors, submitStatus, lowtag) => {
 
     if (recordParseErrors.length !== 0) {
-      return { value: false, reason: 'Tietuelistauksessa on virheitä.' };
+      return {value: false, reason: 'Tietuelistauksessa on virheitä.'};
     }
     if (validRecordCount === 0) {
-      return { value: false, reason: 'Listauksessa ei ole yhtään tietuetta.' }; 
+      return {value: false, reason: 'Listauksessa ei ole yhtään tietuetta.'};
     }
     if (lowtag === undefined) {
-      return { value: false, reason: 'Tietokantatunnusta ei ole valittu.' }; 
+      return {value: false, reason: 'Tietokantatunnusta ei ole valittu.'};
     }
     if (submitStatus === 'NOT_SUBMITTED' || submitStatus === 'FAILED') {
-      return { value: true };
+      return {value: true};
     }
-    return { value: false };
+    return {value: false};
   }
 );

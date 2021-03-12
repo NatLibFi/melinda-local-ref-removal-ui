@@ -1,15 +1,10 @@
-
 .job-configuration-container {
   form {
     margin-left: 1em;
   }
-  
+
   .input-field.low-tag {
     width: 250px;
-  }
-
-  .job-configuration-container .row {
-    margin-bottom: 10px;
   }
 
   .checkbox-tip {
@@ -20,17 +15,17 @@
     line-height: 25px;
     font-size: 1rem;
     color: #42a5f5;
-    
+
     opacity: 0;
     cursor: default;
     user-select: none;
-    transition: opacity .15s ease-in-out;
+    transition: opacity 0.15s ease-in-out;
 
     &.visible {
       opacity: 1;
     }
   }
-  
+
   .autocomplete-content {
     position: absolute;
   }

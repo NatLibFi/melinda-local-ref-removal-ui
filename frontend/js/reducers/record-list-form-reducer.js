@@ -63,15 +63,15 @@ function setLowTag(state, lowtag) {
   return state.set('lowtag', lowtag);
 }
 function setDeleteOption(state, enabled) {
-  return state.set('deleteUnusedRecords', enabled); 
+  return state.set('deleteUnusedRecords', enabled);
 }
 
 function setReplicateOption(state, enabled) {
-  return state.set('replicateRecords', enabled); 
+  return state.set('replicateRecords', enabled);
 }
 
 function setRecordIdList(state, list) {
-  return state.set('rawRecordIdRows', list); 
+  return state.set('rawRecordIdRows', list);
 }
 
 function setSubmitJobStatus(state, status) {

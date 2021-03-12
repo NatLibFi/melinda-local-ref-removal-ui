@@ -24,19 +24,21 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import {expect} from 'chai';
-import { processTask, RecordProcessingError } from './record-update-worker';
+*/
+
+import {expect} from 'chai';
+import {processTask, RecordProcessingError} from './record-update-worker';
 import sinon from 'sinon';
-import { __RewireAPI__ as RewireAPI } from './record-update-worker';
-import { FAKE_RECORD, FAKE_RECORD_WITHOUT_LIBRARY_SPECIFIC_INFO, FAKE_RECORD_ONLY_LOW_TEST, FAKE_RECORD_2_LOW, FAKE_RECORD_WITH_LOW_TEST_REMOVED } from '../test_helpers/fake-data';
-import MarcRecord from 'marc-record-js';
+import {__RewireAPI__ as RewireAPI} from './record-update-worker';
+import {FAKE_RECORD, FAKE_RECORD_WITHOUT_LIBRARY_SPECIFIC_INFO, FAKE_RECORD_ONLY_LOW_TEST, FAKE_RECORD_2_LOW, FAKE_RECORD_WITH_LOW_TEST_REMOVED} from '../test_helpers/fake-data';
+import {MarcRecord} from '@natlibfi/marc-record';
 import _ from 'lodash';
 
 describe('Record update worker', () => {
 
   const TEST_UPDATE_RESPONSE = {recordId: 33};
   const fakeTask = {
-    recordIdHints: { melindaId: 3},
+    recordIdHints: {melindaId: 3},
     lowTag: 'test'
   };
 
@@ -45,7 +47,7 @@ describe('Record update worker', () => {
 
   beforeEach(() => {
     resolveMelindaIdStub = sinon.stub();
-    loggerStub = { log: sinon.stub() };
+    loggerStub = {log: sinon.stub()};
 
     RewireAPI.__Rewire__('resolveMelindaId', resolveMelindaIdStub);
     RewireAPI.__Rewire__('logger', loggerStub);
@@ -72,8 +74,8 @@ describe('Record update worker', () => {
 
         result = undefined;
         clientStub = createClientStub();
-        clientStub.loadRecord.resolves(FAKE_RECORD);
-        clientStub.updateRecord.resolves(TEST_UPDATE_RESPONSE);
+        clientStub.read.resolves({record: FAKE_RECORD});
+        clientStub.update.resolves(TEST_UPDATE_RESPONSE);
 
         return processTask(fakeTask, clientStub).then(res => result = res);
       });
@@ -96,8 +98,8 @@ describe('Record update worker', () => {
 
         result = undefined;
         clientStub = createClientStub();
-        clientStub.loadRecord.resolves(INVALID_RECORD);
-        clientStub.updateRecord.resolves(TEST_UPDATE_RESPONSE);
+        clientStub.read.resolves({record: INVALID_RECORD});
+        clientStub.update.resolves(TEST_UPDATE_RESPONSE);
 
         return processTask(fakeTask, clientStub)
           .then(res => result = res)
@@ -107,7 +109,7 @@ describe('Record update worker', () => {
       it('results in error', () => {
         expect(error.message).to.equal('Invalid record');
       });
-      
+
       it('rejects with processing error', () => {
         expect(error).to.be.instanceof(RecordProcessingError);
       });
@@ -115,14 +117,14 @@ describe('Record update worker', () => {
     });
 
     describe('when loading a record fails', () => {
-      
+
       const TEST_LOAD_ERROR = new Error('Error loading record');
 
       beforeEach(() => {
         resolveMelindaIdStub.resolves(3);
         clientStub = createClientStub();
-        clientStub.loadRecord.rejects(TEST_LOAD_ERROR);
-        clientStub.updateRecord.resolves(TEST_UPDATE_RESPONSE);
+        clientStub.read.rejects(TEST_LOAD_ERROR);
+        clientStub.update.resolves(TEST_UPDATE_RESPONSE);
 
         return processTask(fakeTask, clientStub)
           .then(res => result = res)
@@ -144,14 +146,14 @@ describe('Record update worker', () => {
     });
 
     describe('when updating a record fails', () => {
-      
+
       const TEST_UPDATE_ERROR = new Error('Error updating record');
 
       beforeEach(() => {
         resolveMelindaIdStub.resolves(3);
         clientStub = createClientStub();
-        clientStub.loadRecord.resolves(FAKE_RECORD);
-        clientStub.updateRecord.rejects(TEST_UPDATE_ERROR);
+        clientStub.read.resolves({record: FAKE_RECORD});
+        clientStub.update.rejects(TEST_UPDATE_ERROR);
 
         return processTask(fakeTask, clientStub)
           .then(res => result = res)
@@ -175,19 +177,19 @@ describe('Record update worker', () => {
     describe('when Melinda record id resolution works', () => {
 
       const fakeTaskWithLocalID = {
-        recordIdHints: { localId: 3 },
+        recordIdHints: {localId: 3},
         lowTag: 'test'
       };
 
       beforeEach(() => {
         resolveMelindaIdStub.resolves(33);
         clientStub = createClientStub();
-        clientStub.loadRecord.resolves(FAKE_RECORD);
-        clientStub.updateRecord.resolves(TEST_UPDATE_RESPONSE);
+        clientStub.read.resolves({record: FAKE_RECORD});
+        clientStub.update.resolves(TEST_UPDATE_RESPONSE);
 
         return processTask(fakeTaskWithLocalID, clientStub)
           .then(res => result = res);
-          
+
       });
 
       it('sets the recordId to resolved value', () => {
@@ -195,20 +197,18 @@ describe('Record update worker', () => {
       });
 
     });
-    
+
     describe('when Melinda record id resolution fails', () => {
-
       const fakeErrorMessage = 'fake-error-message';
-
       const fakeTaskWithLocalID = {
-        recordIdHints: { localId: 3 }
+        recordIdHints: {localId: 3}
       };
 
       beforeEach(() => {
         resolveMelindaIdStub.rejects(new Error(fakeErrorMessage));
         clientStub = createClientStub();
-        clientStub.loadRecord.resolves({});
-        clientStub.updateRecord.resolves(TEST_UPDATE_RESPONSE);
+        clientStub.read.resolves({record: {}});
+        clientStub.update.resolves(TEST_UPDATE_RESPONSE);
 
         return processTask(fakeTaskWithLocalID, clientStub)
           .then(res => result = res)
@@ -226,26 +226,26 @@ describe('Record update worker', () => {
 
     describe('when delete unused records option is true', () => {
       describe('when a record has none of the following fields left: LOW/850/852/866', () => {
-         
+
         beforeEach(() => {
           resolveMelindaIdStub.resolves(3);
 
           result = undefined;
           clientStub = createClientStub();
-          clientStub.loadRecord.onCall(0).resolves(record(FAKE_RECORD_ONLY_LOW_TEST));
-          clientStub.loadRecord.onCall(1).resolves(record(FAKE_RECORD_WITH_LOW_TEST_REMOVED));
-          clientStub.updateRecord.resolves(TEST_UPDATE_RESPONSE);
+          clientStub.read.onCall(0).resolves({record: record(FAKE_RECORD_ONLY_LOW_TEST)});
+          clientStub.read.onCall(1).resolves({record: record(FAKE_RECORD_WITH_LOW_TEST_REMOVED)});
+          clientStub.update.resolves(TEST_UPDATE_RESPONSE);
 
           const task = _.assign({}, fakeTask, {deleteUnusedRecords: true});
           return processTask(task, clientStub).then(res => result = res);
         });
 
         it('should call updateRecord with deleted record', () => {
-          expect(clientStub.updateRecord.callCount).to.equal(2);
+          expect(clientStub.update.callCount).to.equal(2);
 
-          const secondCallArgument = clientStub.updateRecord.getCall(1).args[0];
-          expect(secondCallArgument.isDeleted()).to.equal(true);
-          
+          const secondCallArgument = clientStub.update.getCall(1).args[0];
+          expect(secondCallArgument.containsFieldWithValue('STA', [{code: 'a', value: 'DELETED'}])).to.equal(true);
+
         });
 
         it('should report that the record was deleted', () => {
@@ -260,19 +260,19 @@ describe('Record update worker', () => {
 
           result = undefined;
           clientStub = createClientStub();
-          clientStub.loadRecord.resolves(record(FAKE_RECORD_2_LOW));
-          clientStub.updateRecord.resolves(TEST_UPDATE_RESPONSE);
+          clientStub.read.resolves({record: record(FAKE_RECORD_2_LOW)});
+          clientStub.update.resolves(TEST_UPDATE_RESPONSE);
 
           const task = _.assign({}, fakeTask, {deleteUnusedRecords: true});
           return processTask(task, clientStub).then(res => result = res);
         });
 
         it('should not try to call updateRecord with deleted record', () => {
-          expect(clientStub.updateRecord.callCount).to.equal(1);
+          expect(clientStub.update.callCount).to.equal(1);
 
-          const callArgument = clientStub.updateRecord.getCall(0).args[0];
-          expect(callArgument.isDeleted()).to.equal(false);
-          
+          const callArgument = clientStub.update.getCall(0).args[0];
+          expect(callArgument.containsFieldWithValue('STA', [{code: 'a', value: 'DELETED'}])).to.equal(false);
+
         });
       });
     });
@@ -283,8 +283,8 @@ describe('Record update worker', () => {
         resolveMelindaIdStub.resolves(3);
 
         clientStub = createClientStub();
-        clientStub.loadRecord.resolves(FAKE_RECORD_WITHOUT_LIBRARY_SPECIFIC_INFO);
-     
+        clientStub.read.resolves({record: FAKE_RECORD_WITHOUT_LIBRARY_SPECIFIC_INFO});
+
         return processTask(fakeTask, clientStub)
           .then(res => result = res)
           .catch(err => error = err);
@@ -299,7 +299,7 @@ describe('Record update worker', () => {
       });
 
       it('does not call updateRecord', () => {
-        expect(clientStub.updateRecord.callCount).to.equal(0);
+        expect(clientStub.update.callCount).to.equal(0);
       });
     });
 
@@ -308,12 +308,12 @@ describe('Record update worker', () => {
 
 function createClientStub() {
   return {
-    loadRecord: sinon.stub(),
-    updateRecord: sinon.stub(),
-    createRecord: sinon.stub()
+    read: sinon.stub(),
+    update: sinon.stub(),
+    create: sinon.stub()
   };
 }
 
 function record(record) {
-  return new MarcRecord(record);
+  return new MarcRecord(record, {subfieldValues: false});
 }

@@ -24,17 +24,19 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import express from 'express';
+*/
+
+import express from 'express';
 import cors from 'cors';
-import { corsOptions } from 'server/utils';
-import { requireSession, readSessionMiddleware } from 'server/session-controller';
+import {corsOptions} from 'server/utils';
+import {requireSession, readSessionMiddleware} from 'server/session-controller';
 
 export default function StatusController(resultWorker) {
-  
+
   const statusController = express();
-  
+
   statusController.options('/', cors(corsOptions)); // enable pre-flight
-  
+
   statusController.get('/', cors(corsOptions), readSessionMiddleware, requireSession, (req, res) => {
     res.send(resultWorker.getStatusInfo());
   });

@@ -24,26 +24,29 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import _ from 'lodash';
+*/
+
+import _ from 'lodash';
 import xml2js from 'xml2js';
 import promisify from 'es6-promisify';
 import fetch from 'isomorphic-fetch';
-import { readEnvironmentVariable } from 'server/utils';
-import MelindaClient from '@natlibfi/melinda-api-client';
-import MarcRecord from 'marc-record-js';
+import {readEnvironmentVariable} from 'server/utils';
+import {createApiClient} from '@natlibfi/melinda-rest-api-client';
 
 const parseXMLStringToJSON = promisify(xml2js.parseString);
 
 
-const apiUrl = readEnvironmentVariable('MELINDA_API', null);
+const restApiUrl = readEnvironmentVariable('REST_API_URL');
+const restApiUsername = readEnvironmentVariable('REST_API_USERNAME');
+const restApiPassword = readEnvironmentVariable('REST_API_PASSWORD');
 const alephUrl = readEnvironmentVariable('ALEPH_URL');
 const base = readEnvironmentVariable('ALEPH_INDEX_BASE', 'fin01');
 
 const ALEPH_ERROR_EMPTY_SET = 'empty set';
 const melindaClientConfig = {
-  endpoint: apiUrl,
-  user: '',
-  password: ''
+  restApiUrl,
+  restApiUsername,
+  restApiPassword
 };
 
 export function resolveMelindaId(melindaId, localId, libraryTag, links) {
@@ -56,16 +59,16 @@ export function resolveMelindaId(melindaId, localId, libraryTag, links) {
     queryMIDDRindex(melindaId, links),
     queryXServer(melindaId, links)
   ])
-  .then(([sidaRecordIdList, middrRecordIdList, XServerRecordIdList]) => {
+    .then(([sidaRecordIdList, middrRecordIdList, XServerRecordIdList]) => {
 
-    const combinedResolvedIdList = _.uniq(_.concat(sidaRecordIdList, middrRecordIdList, XServerRecordIdList));
-    return combinedResolvedIdList;
+      const combinedResolvedIdList = _.uniq(_.concat(sidaRecordIdList, middrRecordIdList, XServerRecordIdList));
+      return combinedResolvedIdList;
 
-  })
-  .then(validateResult)
-  .then(recordIdList => {
-    return _.head(recordIdList);
-  });
+    })
+    .then(validateResult)
+    .then(recordIdList => {
+      return _.head(recordIdList);
+    });
 }
 
 function querySIDAindex(localId, libraryTag, links) {
@@ -117,19 +120,15 @@ function queryXServer(melindaId, links) {
 }
 
 function isRecordValid(melindaId) {
-  const client = new MelindaClient(melindaClientConfig);
-
-  return new Promise((resolve) => {
-    client.loadRecord(melindaId).then(responseRecord => {
-      const record = new MarcRecord(responseRecord);
-      resolve(!record.isDeleted());
-    }).catch(() => {
-      resolve(false);
-    }).done();
-
+  const client = createApiClient(melindaClientConfig);
+  return new Promise((resolve, reject) => {
+    client.read(melindaId).then(({record}) => {
+      resolve(!record.containsFieldWithValue('STA', [{code: 'a', value: 'DELETED'}]));
+    }).catch(error => {
+      reject(error);
+    });
   });
 }
-
 
 function loadRecordIdList(setResponse, defaultValue = []) {
 
@@ -142,7 +141,7 @@ function loadRecordIdList(setResponse, defaultValue = []) {
     }
   }
 
-  const { set_number, no_entries } = setResponse.find;
+  const {set_number, no_entries} = setResponse.find;
   const presentRequestUrl = `${alephUrl}/X?op=present&set_number=${set_number}&set_entry=1-${no_entries}`;
 
   return fetch(presentRequestUrl)

@@ -57,10 +57,8 @@ export class SigninFormPanel extends React.Component {
   }
 
   executeSignin() {
- 
     const {username, password} = this.state;
     this.props.startSession(username, password);
-
   }
 
   renderPreloader() {
@@ -86,13 +84,10 @@ export class SigninFormPanel extends React.Component {
     return (
 
       <div className="card signin-panel valign">
-      
         <div className="card-panel teal lighten-2">
           <h4>{title}</h4>
         </div>
-
         <div className="card-content">
-         
           <form>
             <div className="col s2 offset-s1 input-field">
               <input id="username" type="text" className="validate" value={username} onChange={this.updateUsername.bind(this)}/>
@@ -114,11 +109,8 @@ export class SigninFormPanel extends React.Component {
               </button>
             </div>
           </form>
-        
         </div>
-
         {this.props.sessionState === 'SIGNIN_ONGOING' ? this.renderPreloader():''}
-          
       </div>
 
     );

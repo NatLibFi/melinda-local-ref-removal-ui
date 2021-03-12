@@ -24,8 +24,10 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import fetch from 'isomorphic-fetch';
-import { readEnvironmentVariable } from 'server/utils';
+*/
+
+import fetch from 'isomorphic-fetch';
+import {readEnvironmentVariable} from 'server/utils';
 
 const apiUrl = readEnvironmentVariable('MELINDA_API', null);
 const alephUrl = readEnvironmentVariable('ALEPH_URL');

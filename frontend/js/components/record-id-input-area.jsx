@@ -37,13 +37,13 @@ import '../../styles/components/record-id-input-area';
 
 export class RecordIdInputArea extends React.Component {
 
-  static propTypes = {  
+  static propTypes = {
     onChange: PropTypes.func.isRequired,
     recordParseErrors: PropTypes.array,
     readOnly: PropTypes.bool,
     submitStatus: PropTypes.string.isRequired,
   }
-  
+
   constructor(props) {
     super(props);
 
@@ -73,7 +73,7 @@ export class RecordIdInputArea extends React.Component {
     this.updateErrorMarkers(recordParseErrors || []);
 
     if (this.state.readOnly !== readOnly) {
-      this.setReadOnly(readOnly || false);  
+      this.setReadOnly(readOnly || false);
     }
     if (this.state.submitStatus === 'SUCCESS' && submitStatus === 'NOT_SUBMITTED') {
       this.clearEditor();
@@ -93,7 +93,6 @@ export class RecordIdInputArea extends React.Component {
 
   updateErrorMarkers(nextParseErrors) {
     const visibleErrorMarkers = _.take(nextParseErrors, MAX_VISIBLE_ERROR_AMOUNT);
-
     const nextErrorRows = nextParseErrors.map(err => err.row).reduce((acc, row) => _.set(acc, row, true), {});
 
     this.state.recordParseErrors.forEach(err => {
@@ -102,7 +101,7 @@ export class RecordIdInputArea extends React.Component {
         if (lineHandle) this._editor.setGutterMarker(lineHandle, 'CodeMirror-gutter-error', null);
       }
     });
-    
+
     visibleErrorMarkers.forEach(visibleParseError => {
       const lineHandle = this._editor.getLineHandle(visibleParseError.row);
       const markers = _.get(lineHandle, 'gutterMarkers', {}) || {};
@@ -120,7 +119,6 @@ export class RecordIdInputArea extends React.Component {
   }
 
   setReadOnly(readOnlyFlag) {
-
     this._editor.setOption('readOnly', readOnlyFlag);
     if (readOnlyFlag) {
       window.$(this._editor.getWrapperElement()).addClass('CodeMirror-disabled');
@@ -132,7 +130,7 @@ export class RecordIdInputArea extends React.Component {
   clearEditor() {
     this._editor.setValue('');
   }
-  
+
   makeMarker(msg) {
     var marker = window.$(`<i class="material-icons gutter-tooltip" title="${msg}">error_outline</i>`).get(0);
     marker.style.color = '#822';
@@ -157,12 +155,11 @@ export class RecordIdInputArea extends React.Component {
   }
 
   renderFileUploadInput() {
-
     if (!isFileApiSupported()) {
       return null;
     }
 
-    return (    
+    return (
       <div className="file-field input-field">
         <div className="btn">
           <span>TIEDOSTO</span>
@@ -179,7 +176,6 @@ export class RecordIdInputArea extends React.Component {
     return (
       <div className="record-id-input-controls">
         { this.renderFileUploadInput() }
-
         <div className="record-id-input-container">
           <textarea className="record-id-input" ref={(c) => this._textarea = c} />
         </div>

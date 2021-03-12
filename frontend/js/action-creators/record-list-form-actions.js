@@ -24,9 +24,11 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import { exceptCoreErrors, errorIfStatusNot } from '../utils';
+*/
+
+import { exceptCoreErrors, errorIfStatusNot } from '../utils';
 import { FetchNotOkError } from '../errors';
-import HttpStatus from 'http-status-codes';
+import HttpStatus from 'http-status';
 import { validRecordList } from '../selectors/record-list-selectors';
 
 import {SET_SELECTED_LOW_TAG, SET_RECORD_ID_LIST, SUBMIT_JOB_START, SUBMIT_JOB_SUCCESS, SUBMIT_JOB_FAIL, SET_DELETE_OPTION, SET_REPLICATE_OPTION} from '../constants/action-type-constants';
@@ -78,11 +80,9 @@ export function submitJob() {
     return fetch(`${recordListBasePath}/`, fetchOptions)
       .then(errorIfStatusNot(HttpStatus.OK))
       .then(() => {
-
         dispatch(submitJobSuccess());
-
       }).catch(exceptCoreErrors((error) => {
-
+        console.log(error); // eslint-disable-line no-console
         if (error instanceof FetchNotOkError) {
           switch (error.response.status) {
           case HttpStatus.BAD_REQUEST: return dispatch(submitJobFailure(new Error('Lähettäminen epäonnistui koska tietuelistauksen tiedoissa oli virheitä.')));

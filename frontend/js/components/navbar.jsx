@@ -36,10 +36,10 @@ export class NavBar extends React.Component {
     onLogout: PropTypes.func.isRequired,
     appTitle: PropTypes.string.isRequired,
     username: PropTypes.string
-  }
+  };
 
   componentDidMount() {
-    
+
     window.$('.nav-dropdown').dropdown({
       inDuration: 300,
       outDuration: 300,
@@ -52,25 +52,25 @@ export class NavBar extends React.Component {
   }
 
   render() {
-    const { username, appTitle } = this.props;
+    const {username, appTitle} = this.props;
 
     return (
       <div className="navbar">
-        <nav> 
+        <nav>
           <div className="nav-wrapper">
-            <img 
-              className="mt-logo left" 
+            <img
+              className="mt-logo left"
               src={melindaLogo}
             />
             <ul id="nav" className="left">
               <li className="heading">{appTitle}</li>
-            </ul>        
+            </ul>
             <ul id="nav" className="right">
-            <li><a href="https://www.kiwi.fi/display/melinda/Tietokantatunnusten+massapoisto+Melindasta" target="_blank" rel="noopener noreferrer">
-              <i className="material-icons">help_outline</i>
+              <li><a href="https://www.kiwi.fi/display/melinda/Tietokantatunnusten+massapoisto+Melindasta" target="_blank" rel="noopener noreferrer">
+                <i className="material-icons">help_outline</i>
               </a></li>
               <li><a className="nav-dropdown" href="#" data-activates="mainmenu" ref={(c) => this._dropdown = c} onClick={this.preventDefault}>
-              <i className="material-icons right">account_circle</i></a></li>
+                <i className="material-icons right">account_circle</i></a></li>
             </ul>
           </div>
         </nav>
@@ -83,4 +83,4 @@ export class NavBar extends React.Component {
       </div>
     );
   }
-} 
+}

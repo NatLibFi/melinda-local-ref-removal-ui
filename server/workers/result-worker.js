@@ -24,18 +24,20 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import {ReportEmail} from '../email-template';
+*/
+
+import {ReportEmail} from '../email-template';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import amqp from 'amqplib';
-import { readEnvironmentVariable } from 'server/utils';
-import { logger } from 'server/logger';
+import {readEnvironmentVariable} from 'server/utils';
+import {logger} from 'server/logger';
 import _ from 'lodash';
-import { mail } from '../mailer';
+import {mail} from '../mailer';
 
 const AMQP_HOST = readEnvironmentVariable('AMQP_HOST');
-const AMQP_USERNAME = readEnvironmentVariable('AMQP_USERNAME', 'guest', { hideDefaultValue: true });
-const AMQP_PASSWORD = readEnvironmentVariable('AMQP_PASSWORD', 'guest', { hideDefaultValue: true });
+const AMQP_USERNAME = readEnvironmentVariable('AMQP_USERNAME', 'guest', {hideDefaultValue: true});
+const AMQP_PASSWORD = readEnvironmentVariable('AMQP_PASSWORD', 'guest', {hideDefaultValue: true});
 const INCOMING_TASK_RESULT_QUEUE = 'task_result_queue';
 const INCOMING_JOB_QUEUE = 'job_queue';
 
@@ -79,7 +81,7 @@ export default class ResultWorker {
         this.markTaskCompleted(channel, jobAggregate, taskResult);
       }
 
-    } catch(error) {
+    } catch (error) {
       const {consumerTag, deliveryTag} = msg;
       logger.log('error', 'Error handling task', {consumerTag, deliveryTag}, error);
     }
@@ -114,7 +116,7 @@ export default class ResultWorker {
       this.orphanResults = this.orphanResults.filter(taskResult => taskResult.jobId !== jobId);
 
 
-    } catch(error) {
+    } catch (error) {
       logger.log('error', 'Error handling job', msg, error);
     }
 
@@ -139,14 +141,14 @@ export default class ResultWorker {
       logJobResult(jobId, this.completeJobs[jobId]);
       dispatchEmail(jobId, jobAggregate.email, this.completeJobs[jobId]);
 
-      delete(this.completeJobs[jobId]);
+      delete (this.completeJobs[jobId]);
       this.currentJobs.delete(jobId);
     }
   }
 
   getStatusInfo() {
     const statusForCurrentJobs = Object.create(null);
-    for (let [k,v] of this.currentJobs) {
+    for (let [k, v] of this.currentJobs) {
 
       const allTasksCount = v.job.taskIdList.length;
       const incompleteTaskCount = v.inCompleteTasks.size;
@@ -190,7 +192,7 @@ function dispatchEmail(jobId, emailAddress, taskResults) {
 function formatTaskResult(taskResult) {
   const {lowTag} = taskResult;
   const recordId = _.get(taskResult, 'recordId', 'ID-NOT-FOUND');
-  const localId = _.get(taskResult.recordIdHints, 'localId' ,'');
+  const localId = _.get(taskResult.recordIdHints, 'localId', '');
 
   if (taskResult.taskFailed) {
     return `${recordId} ${localId} ${lowTag} Error: ${taskResult.failureReason}`;

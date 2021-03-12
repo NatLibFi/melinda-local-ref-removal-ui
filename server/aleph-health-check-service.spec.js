@@ -24,12 +24,14 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import chai from 'chai';
-import { checkAlephHealth } from './aleph-health-check-service';
-import { __RewireAPI__ as RewireAPI } from './aleph-health-check-service';
+*/
+
+import chai from 'chai';
+import {checkAlephHealth} from './aleph-health-check-service';
+import {__RewireAPI__ as RewireAPI} from './aleph-health-check-service';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-import { readEnvironmentVariable } from 'server/utils';
+import {readEnvironmentVariable} from 'server/utils';
 
 chai.use(chaiAsPromised);
 var expect = chai.expect;
@@ -39,8 +41,8 @@ const alephUrl = readEnvironmentVariable('ALEPH_URL');
 const fakeApiUrl = apiUrl;
 const fakeXServerUrl = `${alephUrl}/X`;
 
-const FAKE_RESULT_OK = { status: 200 };
-const FAKE_RESULT_ERROR = { status: 503 };
+const FAKE_RESULT_OK = {status: 200};
+const FAKE_RESULT_ERROR = {status: 503};
 
 describe('Aleph health check service', () => {
   let fetchStub;

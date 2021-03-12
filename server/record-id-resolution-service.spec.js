@@ -24,12 +24,14 @@
 * @licend  The above is the entire license notice
 * for the JavaScript code in this file.
 *
-*/import {expect} from 'chai';
-import { resolveMelindaId } from './record-id-resolution-service';
-import { __RewireAPI__ as RewireAPI } from './record-id-resolution-service';
+*/
+
+import {expect} from 'chai';
+import {resolveMelindaId} from './record-id-resolution-service';
+import {__RewireAPI__ as RewireAPI} from './record-id-resolution-service';
 import sinon from 'sinon';
 
-describe('Record list service', () => {  
+describe('Record list service', () => {
   let fetchStub;
   let isRecordValidStub;
 
@@ -56,7 +58,7 @@ describe('Record list service', () => {
         textBodyReadStub.onCall(0).resolves(createFindResponse());
         textBodyReadStub.onCall(1).resolves(FAKE_ALEPH_EMPTYSET_RESPONSE);
         textBodyReadStub.onCall(2).resolves(createPresentResponse(2));
-        
+
         fetchStub.resolves({
           text: textBodyReadStub
         });
@@ -69,7 +71,7 @@ describe('Record list service', () => {
       });
 
     });
-    
+
     describe('when only result is found from middr index', () => {
 
       let result;
@@ -80,7 +82,7 @@ describe('Record list service', () => {
         textBodyReadStub.onCall(0).resolves(FAKE_ALEPH_EMPTYSET_RESPONSE);
         textBodyReadStub.onCall(1).resolves(createFindResponse());
         textBodyReadStub.onCall(2).resolves(createPresentResponse(2));
-        
+
         fetchStub.resolves({
           text: textBodyReadStub
         });
@@ -106,7 +108,7 @@ describe('Record list service', () => {
         textBodyReadStub.onCall(0).resolves(createFindResponse());
         textBodyReadStub.onCall(1).resolves(FAKE_ALEPH_EMPTYSET_RESPONSE);
         textBodyReadStub.onCall(2).resolves(createPresentResponse(2, 3));
-        
+
         fetchStub.resolves({
           text: textBodyReadStub
         });
@@ -141,7 +143,7 @@ describe('Record list service', () => {
         textBodyReadStub.onCall(0).resolves(FAKE_ALEPH_EMPTYSET_RESPONSE);
         textBodyReadStub.onCall(1).resolves(createFindResponse());
         textBodyReadStub.onCall(2).resolves(createPresentResponse(2, 3));
-        
+
         fetchStub.resolves({
           text: textBodyReadStub
         });
@@ -152,7 +154,7 @@ describe('Record list service', () => {
       it('rejects with an error', () => {
         expect(error).to.be.instanceof(Error);
       });
-      
+
       it('does not set result', () => {
         expect(result).to.equal(undefined);
       });
@@ -175,7 +177,7 @@ describe('Record list service', () => {
         textBodyReadStub.onCall(2).resolves(createPresentResponse(2));
         textBodyReadStub.onCall(3).resolves(createPresentResponse(3));
         isRecordValidStub.withArgs(111).resolves(true);
-        
+
         fetchStub.resolves({
           text: textBodyReadStub
         });
@@ -196,7 +198,7 @@ describe('Record list service', () => {
     describe('when sida and middr index resolve into multiple but same ids', () => {
 
       let result;
-    
+
       beforeEach(() => {
         result = undefined;
         const textBodyReadStub = sinon.stub();
@@ -205,7 +207,7 @@ describe('Record list service', () => {
         textBodyReadStub.onCall(2).resolves(createPresentResponse(2));
         textBodyReadStub.onCall(3).resolves(createPresentResponse(2));
         isRecordValidStub.withArgs('2').resolves(true);
-        
+
         fetchStub.resolves({
           text: textBodyReadStub
         });
@@ -230,7 +232,7 @@ describe('Record list service', () => {
         const textBodyReadStub = sinon.stub();
         textBodyReadStub.onCall(0).resolves(FAKE_ALEPH_EMPTYSET_RESPONSE);
         textBodyReadStub.onCall(1).resolves(FAKE_ALEPH_EMPTYSET_RESPONSE);
-        
+
         fetchStub.resolves({
           text: textBodyReadStub
         });
@@ -238,7 +240,7 @@ describe('Record list service', () => {
         return resolveMelindaId(melinda_id_param, 123, 'TEST-LOW', [111]).then(res => result = res);
       });
 
-      
+
       it('defaults to melinda id', () => {
         expect(result).to.equal(melinda_id_param);
       });
@@ -281,7 +283,7 @@ describe('Record list service', () => {
         textBodyReadStub.onCall(0).resolves(FAKE_ALEPH_EMPTYSET_RESPONSE);
         textBodyReadStub.onCall(1).resolves(FAKE_ALEPH_EMPTYSET_RESPONSE);
         isRecordValidStub.withArgs(111).resolves(false);
-        
+
         fetchStub.resolves({
           text: textBodyReadStub
         });
@@ -293,7 +295,7 @@ describe('Record list service', () => {
         expect(error).to.be.instanceof(Error);
       });
 
-      it('has proper error message', function() {
+      it('has proper error message', function () {
         expect(error.message).to.equal('Resolved into 0 records.');
       });
 
@@ -309,7 +311,7 @@ describe('Record list service', () => {
         const textBodyReadStub = sinon.stub();
         textBodyReadStub.onCall(0).resolves(FAKE_ALEPH_UNEXPECTED_ERROR);
         textBodyReadStub.onCall(1).resolves(createFindResponse());
-        
+
         fetchStub.resolves({
           text: textBodyReadStub
         });
@@ -321,7 +323,7 @@ describe('Record list service', () => {
         expect(error).to.be.instanceof(Error);
       });
 
-      it('has proper error message', function() {
+      it('has proper error message', function () {
         expect(error.message).to.equal('TEST-ERROR');
       });
 
@@ -338,7 +340,7 @@ describe('Record list service', () => {
         const textBodyReadStub = sinon.stub();
         textBodyReadStub.onCall(0).resolves(createFindResponse());
         textBodyReadStub.onCall(1).resolves(createPresentResponse(2));
-        
+
         fetchStub.resolves({
           text: textBodyReadStub
         });
@@ -350,7 +352,7 @@ describe('Record list service', () => {
         expect(fetchStub.callCount).to.equal(2);
         expect(isRecordValidStub.callCount).to.equal(0);
       });
-      
+
       it('resolves the melinda id correctly', () => {
         expect(result).to.equal('2');
       });
@@ -388,9 +390,9 @@ function createFindResponse() {
 }
 
 function createPresentResponse(...ids) {
- 
+
   const records = ids.map(id => `<record><doc_number>${id}</doc_number></record>`);
-  
+
   return `
 <?xml version = "1.0" encoding = "UTF-8"?>
 <present>${records}

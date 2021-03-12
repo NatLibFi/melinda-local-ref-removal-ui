@@ -48,3 +48,4 @@ merge-action-archive
 
 server/common
 .env
+conf

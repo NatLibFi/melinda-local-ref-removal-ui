@@ -1,17 +1,26 @@
 .info-card {
-  
   p:not(:first-of-type) {
     margin-top: 2em;
+  }
+
+  p:not(:first-of-type).no-margin-top {
+    margin-top: 0;
   }
 
   .card-title {
     color: #42a5f5;
   }
 
+  .card-sub-title {
+    display: block;
+    color: #42a5f5;
+    font-size: large;
+  }
+
   .block {
     font-family: monospace, monospace;
     white-space: pre;
-    background-color: #FAFAFA;
+    background-color: #fafafa;
     span {
       display: block;
     }
